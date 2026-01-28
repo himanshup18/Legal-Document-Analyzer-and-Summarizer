@@ -1,4 +1,4 @@
-gconst pdfParse = require('pdf-parse');
+const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
@@ -67,15 +67,11 @@ async function parseFile(buffer, fileType, fileName = '') {
   console.log('Parsing file:', fileName, 'MIME type:', mimeType, 'Size:', buffer.length, 'bytes');
 
   try {
-    // Check by MIME type first
     if (mimeType === 'application/pdf') {
       return await parsePDF(buffer);
     } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-      // DOCX file
       return await parseDOCX(buffer);
     } else if (mimeType === 'application/msword') {
-      // Old .doc format - mammoth might not support it well
-      // Try to parse it anyway, but warn if it fails
       try {
         return await parseDOCX(buffer);
       } catch (error) {
@@ -87,9 +83,7 @@ async function parseFile(buffer, fileType, fileName = '') {
         throw new Error('Text file appears to be empty.');
       }
       return text;
-    } 
-    // Fallback: check by file extension if MIME type is unclear
-    else if (fileNameLower.endsWith('.pdf')) {
+    } else if (fileNameLower.endsWith('.pdf')) {
       return await parsePDF(buffer);
     } else if (fileNameLower.endsWith('.docx')) {
       return await parseDOCX(buffer);

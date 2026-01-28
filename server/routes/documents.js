@@ -10,11 +10,10 @@ const {
 
 const router = express.Router();
 
-// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 10 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = [
@@ -25,7 +24,6 @@ const upload = multer({
       'text/markdown',
     ];
 
-    // Also check file extension as fallback
     const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt', '.md'];
     const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
 
@@ -39,7 +37,6 @@ const upload = multer({
   },
 });
 
-// Get all documents
 router.get('/', async (req, res) => {
   try {
     const documents = await Document.find().sort({ createdAt: -1 });
@@ -49,7 +46,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get a single document by ID
 router.get('/:id', async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -62,10 +58,8 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-// Upload and process a document
 router.post('/upload', (req, res) => {
   upload.single('document')(req, res, async (err) => {
-    // Handle multer errors
     if (err) {
       if (err instanceof multer.MulterError) {
         if (err.code === 'LIMIT_FILE_SIZE') {
@@ -73,7 +67,6 @@ router.post('/upload', (req, res) => {
         }
         return res.status(400).json({ error: 'File upload error: ' + err.message });
       }
-      // Handle file filter errors
       if (err.message && err.message.includes('Invalid file type')) {
         return res.status(400).json({ error: err.message });
       }
@@ -85,14 +78,12 @@ router.post('/upload', (req, res) => {
         return res.status(400).json({ error: 'No file uploaded. Please select a file.' });
       }
 
-      // Log file info for debugging
       console.log('File received:', {
         originalName: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,
       });
 
-      // Parse the file content
       let content;
       try {
         content = await parseFile(req.file.buffer, req.file.mimetype, req.file.originalname);
@@ -111,7 +102,6 @@ router.post('/upload', (req, res) => {
 
       console.log('Successfully extracted', content.length, 'characters from document');
 
-      // Create document record
       const document = new Document({
         filename: req.file.filename || `doc_${Date.now()}`,
         originalName: req.file.originalname,
@@ -122,7 +112,6 @@ router.post('/upload', (req, res) => {
 
       await document.save();
 
-      // Process document with OpenAI (async, don't wait)
       processDocumentAsync(document._id, content).catch((err) => {
         console.error('Error processing document:', err);
       });
@@ -143,7 +132,6 @@ router.post('/upload', (req, res) => {
   });
 });
 
-// Process document with OpenAI (async function)
 async function processDocumentAsync(documentId, content) {
   try {
     const document = await Document.findById(documentId);
@@ -151,14 +139,12 @@ async function processDocumentAsync(documentId, content) {
       throw new Error('Document not found');
     }
 
-    // Run all analyses in parallel
     const [summary, analysis, keyPoints] = await Promise.all([
       summarizeDocument(content),
       analyzeDocument(content),
       extractKeyPoints(content),
     ]);
 
-    // Update document with results
     document.summary = summary;
     document.analysis = analysis;
     document.keyPoints = keyPoints;
@@ -167,7 +153,6 @@ async function processDocumentAsync(documentId, content) {
     console.log(`Document ${documentId} processed successfully`);
   } catch (error) {
     console.error(`Error processing document ${documentId}:`, error);
-    // Update document with error status
     const document = await Document.findById(documentId);
     if (document) {
       document.analysis = { error: error.message };
@@ -176,7 +161,6 @@ async function processDocumentAsync(documentId, content) {
   }
 }
 
-// Re-analyze a document
 router.post('/:id/analyze', async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
@@ -184,7 +168,6 @@ router.post('/:id/analyze', async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    // Process document with OpenAI
     const [summary, analysis, keyPoints] = await Promise.all([
       summarizeDocument(document.content),
       analyzeDocument(document.content),
@@ -205,7 +188,6 @@ router.post('/:id/analyze', async (req, res) => {
   }
 });
 
-// Delete a document
 router.delete('/:id', async (req, res) => {
   try {
     const document = await Document.findByIdAndDelete(req.params.id);

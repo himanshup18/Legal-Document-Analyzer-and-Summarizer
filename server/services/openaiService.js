@@ -1,6 +1,5 @@
 const OpenAI = require('openai');
 
-// Initialize OpenAI client lazily to ensure env vars are loaded
 function getOpenAIClient() {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is not set in environment variables');
@@ -21,7 +20,7 @@ async function summarizeDocument(content) {
     Make it clear and concise but thorough enough for legal professionals.
     
     Document content:
-    ${content.substring(0, 12000)}`; // Limit to avoid token limits
+    ${content.substring(0, 12000)}`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4-turbo-preview',
@@ -121,7 +120,6 @@ async function extractKeyPoints(content) {
     });
 
     const keyPointsText = response.choices[0].message.content;
-    // Extract numbered points from the response
     const points = keyPointsText
       .split(/\d+[\.\)]/)
       .filter(point => point.trim().length > 0)
