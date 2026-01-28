@@ -1,4 +1,4 @@
-const pdfParse = require('pdf-parse');
+gconst pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 
 /**
