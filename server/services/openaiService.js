@@ -51,17 +51,23 @@ async function summarizeDocument(content) {
 async function analyzeDocument(content) {
   try {
     const openai = getOpenAIClient();
-    const prompt = `Analyze the following legal document and provide:
-    1. Document type (contract, agreement, policy, etc.)
-    2. Key parties involved
-    3. Main obligations and rights
-    4. Important dates and deadlines
+    const prompt = `Analyze the following document and provide:
+    1. Document type (contract, agreement, policy, certificate, grade sheet, etc.)
+    2. Key parties involved (if applicable)
+    3. Main obligations and rights (if applicable)
+    4. Important dates and deadlines (if applicable)
     5. Financial terms (if any)
-    6. Termination clauses
-    7. Risk factors or important warnings
-    8. Compliance requirements
+    6. Termination clauses (if applicable)
+    7. Risk factors or important warnings (if any)
+    8. Compliance requirements (if applicable)
+    9. Highlighted clauses/points: an array of objects with { title, severity(low|medium|high), snippet, note }.
+       - ALWAYS provide at least 3-5 highlighted items, even if they are just key points or important information.
+       - For non-legal documents (like certificates, grade sheets), highlight important information, key details, or notable sections.
+       - snippet must be an exact quote from the document (short, 1-3 sentences) so we can highlight it in the UI.
+       - title should be descriptive (e.g., "Important Date", "Key Requirement", "Critical Information").
+       - severity can be "low", "medium", or "high" based on importance.
     
-    Format your response as a structured JSON object.
+    Format your response as a structured JSON object with a field called "highlightedRiskClauses" (or "highlightedClauses") containing the array.
     
     Document content:
     ${content.substring(0, 12000)}`;

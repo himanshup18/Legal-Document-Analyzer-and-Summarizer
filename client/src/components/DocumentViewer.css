@@ -53,6 +53,36 @@
   margin: 0;
 }
 
+.viewer-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.export-button {
+  background: #ffffff;
+  color: #333;
+  border: 2px solid #e0e0e0;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.export-button:hover:not(:disabled) {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.25);
+}
+
+.export-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .reanalyze-button {
   background: #667eea;
   color: white;
@@ -210,6 +240,190 @@
   margin: 0;
 }
 
+.risk-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.risk-item {
+  background: #fff;
+  border: 1px solid #e6e6e6;
+  border-left: 5px solid #f0ad4e;
+  padding: 0.9rem 1rem;
+  border-radius: 10px;
+}
+
+.risk-item.risk-high { border-left-color: #dc3545; }
+.risk-item.risk-medium { border-left-color: #f0ad4e; }
+.risk-item.risk-low { border-left-color: #28a745; }
+
+.risk-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+}
+
+.risk-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(240, 173, 78, 0.18);
+  color: #8a5a00;
+}
+
+.risk-item.risk-high .risk-badge { background: rgba(220, 53, 69, 0.15); color: #a31422; }
+.risk-item.risk-medium .risk-badge { background: rgba(240, 173, 78, 0.18); color: #8a5a00; }
+.risk-item.risk-low .risk-badge { background: rgba(40, 167, 69, 0.15); color: #146c2e; }
+
+.risk-note {
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  margin-bottom: 0.4rem;
+  white-space: pre-wrap;
+}
+
+.risk-snippet {
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  font-style: italic;
+  white-space: pre-wrap;
+  margin-bottom: 0.75rem;
+}
+
+.note-section {
+  margin-top: 0.5rem;
+}
+
+.note-content {
+  color: #333;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  background: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: 6px;
+  margin-bottom: 0.5rem;
+}
+
+.note-add-btn,
+.note-edit-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.note-add-btn:hover,
+.note-edit-btn:hover {
+  background: #764ba2;
+  transform: translateY(-1px);
+}
+
+.note-editor {
+  margin-top: 0.75rem;
+}
+
+.note-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.note-textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.note-textarea:disabled {
+  background: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.note-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.note-save-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.note-save-btn:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+}
+
+.note-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.note-cancel-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.note-cancel-btn:hover:not(:disabled) {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.note-cancel-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.document-text {
+  font-size: 0.95rem;
+  line-height: 1.85;
+  color: #222;
+}
+
+.risk-mark {
+  padding: 0.05rem 0.2rem;
+  border-radius: 4px;
+}
+
+.risk-mark.risk-high { background: rgba(220, 53, 69, 0.22); }
+.risk-mark.risk-medium { background: rgba(240, 173, 78, 0.22); }
+.risk-mark.risk-low { background: rgba(40, 167, 69, 0.20); }
+
 .error-text {
   color: #dc3545;
   font-weight: 500;
@@ -227,6 +441,15 @@
   }
 
   .reanalyze-button {
+    width: 100%;
+  }
+
+  .viewer-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .export-button {
     width: 100%;
   }
 }

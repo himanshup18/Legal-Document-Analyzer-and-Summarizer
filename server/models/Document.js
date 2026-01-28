@@ -35,6 +35,17 @@ const documentSchema = new mongoose.Schema({
     type: Object,
     default: {},
   },
+  highlights: {
+    type: [
+      {
+        title: { type: String, default: '' },
+        severity: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+        snippet: { type: String, default: '' },
+        note: { type: String, default: '' },
+      },
+    ],
+    default: [],
+  },
   keyPoints: {
     type: [String],
     default: [],

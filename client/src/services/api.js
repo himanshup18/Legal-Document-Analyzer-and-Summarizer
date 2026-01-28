@@ -56,4 +56,9 @@ export const reanalyzeDocument = async (id) => {
   return response.data;
 };
 
+export const updateHighlightNote = async (documentId, highlightIndex, note) => {
+  const response = await api.patch(`/documents/${documentId}/highlights/${highlightIndex}`, { note });
+  return response.data;
+};
+
 export default api;

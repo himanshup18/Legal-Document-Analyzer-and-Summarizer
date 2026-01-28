@@ -146,6 +146,29 @@ async function processDocumentAsync(documentId, content) {
 
     document.summary = summary;
     document.analysis = analysis;
+    
+    // Extract highlights from various possible field names
+    let extractedHighlights = [];
+    if (Array.isArray(analysis?.highlightedRiskClauses)) {
+      extractedHighlights = analysis.highlightedRiskClauses;
+    } else if (Array.isArray(analysis?.highlightedClauses)) {
+      extractedHighlights = analysis.highlightedClauses;
+    } else if (Array.isArray(analysis?.highlighted_risks)) {
+      extractedHighlights = analysis.highlighted_risks;
+    } else if (Array.isArray(analysis?.highlightedRisks)) {
+      extractedHighlights = analysis.highlightedRisks;
+    } else if (Array.isArray(analysis?.highlights)) {
+      extractedHighlights = analysis.highlights;
+    }
+    
+    // Ensure each highlight has required fields
+    document.highlights = extractedHighlights.map((h, idx) => ({
+      title: h.title || `Highlight ${idx + 1}`,
+      severity: h.severity || 'medium',
+      snippet: h.snippet || '',
+      note: h.note || '',
+    }));
+    
     document.keyPoints = keyPoints;
     await document.save();
 
@@ -175,11 +198,61 @@ router.post('/:id/analyze', requireAuth, async (req, res) => {
 
     document.summary = summary;
     document.analysis = analysis;
+    
+    // Extract highlights from various possible field names
+    let extractedHighlights = [];
+    if (Array.isArray(analysis?.highlightedRiskClauses)) {
+      extractedHighlights = analysis.highlightedRiskClauses;
+    } else if (Array.isArray(analysis?.highlightedClauses)) {
+      extractedHighlights = analysis.highlightedClauses;
+    } else if (Array.isArray(analysis?.highlighted_risks)) {
+      extractedHighlights = analysis.highlighted_risks;
+    } else if (Array.isArray(analysis?.highlightedRisks)) {
+      extractedHighlights = analysis.highlightedRisks;
+    } else if (Array.isArray(analysis?.highlights)) {
+      extractedHighlights = analysis.highlights;
+    }
+    
+    // Ensure each highlight has required fields
+    document.highlights = extractedHighlights.map((h, idx) => ({
+      title: h.title || `Highlight ${idx + 1}`,
+      severity: h.severity || 'medium',
+      snippet: h.snippet || '',
+      note: h.note || '',
+    }));
+    
     document.keyPoints = keyPoints;
     await document.save();
 
     res.json({
       message: 'Document analyzed successfully',
+      document,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.patch('/:id/highlights/:highlightIndex', requireAuth, async (req, res) => {
+  try {
+    const document = await Document.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!document) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    const highlightIndex = parseInt(req.params.highlightIndex);
+    if (!Array.isArray(document.highlights) || highlightIndex < 0 || highlightIndex >= document.highlights.length) {
+      return res.status(400).json({ error: 'Invalid highlight index' });
+    }
+
+    const { note } = req.body;
+    if (note !== undefined) {
+      document.highlights[highlightIndex].note = String(note || '').trim();
+      await document.save();
+    }
+
+    res.json({
+      message: 'Note updated successfully',
       document,
     });
   } catch (error) {

@@ -19,6 +19,10 @@ function AppContent() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchDocuments();
+    } else {
+      setDocuments([]);
+      setSelectedDocument(null);
+      setError(null);
     }
   }, [isAuthenticated]);
 
@@ -184,6 +188,11 @@ function AppContent() {
               document={selectedDocument}
               onReanalyze={handleReanalyze}
               loading={loading}
+              onDocumentUpdate={(updatedDoc) => {
+                setSelectedDocument(updatedDoc);
+                const updatedDocs = documents.map(d => d._id === updatedDoc._id ? updatedDoc : d);
+                setDocuments(updatedDocs);
+              }}
             />
           </div>
         </div>
