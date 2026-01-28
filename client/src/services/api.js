@@ -2,9 +2,21 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
+const getAuthHeader = () => {
+  const token = localStorage.getItem('token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 const api = axios.create({
   baseURL: API_BASE_URL,
-  // Don't set default Content-Type for multipart/form-data - let axios set it automatically
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
 });
 
 export const getDocuments = async () => {
@@ -22,11 +34,13 @@ export const uploadDocument = async (file) => {
   formData.append('document', file);
 
   try {
-    // Let axios automatically set Content-Type with boundary - don't set it manually
-    const response = await axios.post(`${API_BASE_URL}/documents/upload`, formData);
+    const response = await axios.post(`${API_BASE_URL}/documents/upload`, formData, {
+      headers: {
+        ...getAuthHeader(),
+      },
+    });
     return response.data;
   } catch (error) {
-    // Extract error message from response
     const errorMessage = error.response?.data?.error || error.message || 'Failed to upload document';
     throw new Error(errorMessage);
   }

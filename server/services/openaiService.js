@@ -1,4 +1,4 @@
-const OpenAI = require('openai');
+import OpenAI from 'openai';
 
 function getOpenAIClient() {
   if (!process.env.OPENAI_API_KEY) {
@@ -133,8 +133,4 @@ async function extractKeyPoints(content) {
   }
 }
 
-module.exports = {
-  summarizeDocument,
-  analyzeDocument,
-  extractKeyPoints,
-};
+export { summarizeDocument, analyzeDocument, extractKeyPoints };

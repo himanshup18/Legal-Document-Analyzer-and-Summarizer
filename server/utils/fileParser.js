@@ -1,5 +1,5 @@
-const pdfParse = require('pdf-parse');
-const mammoth = require('mammoth');
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 /**
  * Parse PDF file and extract text content
@@ -108,9 +108,4 @@ async function parseFile(buffer, fileType, fileName = '') {
   }
 }
 
-module.exports = {
-  parseFile,
-  parsePDF,
-  parseDOCX,
-  parseTXT,
-};
+export { parseFile, parsePDF, parseDOCX, parseTXT };

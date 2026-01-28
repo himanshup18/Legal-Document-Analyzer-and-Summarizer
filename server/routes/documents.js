@@ -1,12 +1,10 @@
-const express = require('express');
-const multer = require('multer');
-const Document = require('../models/Document');
-const { parseFile } = require('../utils/fileParser');
-const {
-  summarizeDocument,
-  analyzeDocument,
-  extractKeyPoints,
-} = require('../services/openaiService');
+import express from 'express';
+import multer from 'multer';
+
+import Document from '../models/Document.js';
+import { parseFile } from '../utils/fileParser.js';
+import { summarizeDocument, analyzeDocument, extractKeyPoints } from '../services/openaiService.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -37,18 +35,18 @@ const upload = multer({
   },
 });
 
-router.get('/', async (req, res) => {
+router.get('/', requireAuth, async (req, res) => {
   try {
-    const documents = await Document.find().sort({ createdAt: -1 });
+    const documents = await Document.find({ userId: req.user.id }).sort({ createdAt: -1 });
     res.json(documents);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const document = await Document.findOne({ _id: req.params.id, userId: req.user.id });
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -58,7 +56,7 @@ router.get('/:id', async (req, res) => {
   }
 });
 
-router.post('/upload', (req, res) => {
+router.post('/upload', requireAuth, (req, res) => {
   upload.single('document')(req, res, async (err) => {
     if (err) {
       if (err instanceof multer.MulterError) {
@@ -103,6 +101,7 @@ router.post('/upload', (req, res) => {
       console.log('Successfully extracted', content.length, 'characters from document');
 
       const document = new Document({
+        userId: req.user.id,
         filename: req.file.filename || `doc_${Date.now()}`,
         originalName: req.file.originalname,
         fileType: req.file.mimetype,
@@ -161,9 +160,9 @@ async function processDocumentAsync(documentId, content) {
   }
 }
 
-router.post('/:id/analyze', async (req, res) => {
+router.post('/:id/analyze', requireAuth, async (req, res) => {
   try {
-    const document = await Document.findById(req.params.id);
+    const document = await Document.findOne({ _id: req.params.id, userId: req.user.id });
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -188,9 +187,9 @@ router.post('/:id/analyze', async (req, res) => {
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const document = await Document.findByIdAndDelete(req.params.id);
+    const document = await Document.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
@@ -200,4 +199,4 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

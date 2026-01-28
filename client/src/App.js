@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import Header from './components/Header';
+import AuthModal from './components/AuthModal';
 import DocumentUpload from './components/DocumentUpload';
 import DocumentList from './components/DocumentList';
 import DocumentViewer from './components/DocumentViewer';
 import { getDocuments, uploadDocument, deleteDocument, reanalyzeDocument } from './services/api';
 
-function App() {
+function AppContent() {
+  const { isAuthenticated, signup, signin, loading: authLoading } = useAuth();
   const [documents, setDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
-    fetchDocuments();
-  }, []);
+    if (isAuthenticated) {
+      fetchDocuments();
+    }
+  }, [isAuthenticated]);
 
   const fetchDocuments = async () => {
     try {
@@ -22,7 +29,11 @@ function App() {
       setDocuments(data);
       setError(null);
     } catch (err) {
-      setError('Failed to fetch documents: ' + err.message);
+      if (err.response?.status === 401) {
+        setError('Please sign in to view your documents');
+      } else {
+        setError('Failed to fetch documents: ' + err.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -106,12 +117,49 @@ function App() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="App">
+        <div className="loading-screen">
+          <div className="spinner"></div>
+          <p>Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="App">
+        <Header onAuthClick={() => setShowAuthModal(true)} />
+        <div className="auth-required">
+          <div className="auth-required-content">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17 21v-8H7v8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M7 3v5h5" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            <h2>Sign In Required</h2>
+            <p>Please sign in to access the Legal Document Analyzer</p>
+            <button className="auth-required-button" onClick={() => setShowAuthModal(true)}>
+              Sign In
+            </button>
+          </div>
+        </div>
+        {showAuthModal && (
+          <AuthModal
+            onClose={() => setShowAuthModal(false)}
+            onSignup={signup}
+            onSignin={signin}
+          />
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="App">
-      <header className="App-header">
-        <h1>Legal Document Analyzer & Summarizer</h1>
-        <p>Upload legal documents to get AI-powered analysis and summaries</p>
-      </header>
+      <Header onAuthClick={() => setShowAuthModal(true)} />
 
       {error && (
         <div className="error-message">
@@ -140,7 +188,23 @@ function App() {
           </div>
         </div>
       </main>
+
+      {showAuthModal && (
+        <AuthModal
+          onClose={() => setShowAuthModal(false)}
+          onSignup={signup}
+          onSignin={signin}
+        />
+      )}
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 
