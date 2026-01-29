@@ -73,7 +73,6 @@ const RichTextEditor = ({ content, highlights = [], onHighlightClick }) => {
             if (!snippet) return;
 
             // Simple exact match finding
-            // In a real app, you might want more robust fuzzy matching
             let start = -1;
             let searchIndex = 0;
             
@@ -84,8 +83,6 @@ const RichTextEditor = ({ content, highlights = [], onHighlightClick }) => {
           });
         },
         component: (props) => {
-          // Find which highlight this corresponds to
-          // We can match by text content
           const text = props.contentState.getBlockForKey(props.blockKey).getText().slice(props.start, props.end);
           const highlight = highlights.find(h => h.snippet === text);
           
@@ -101,16 +98,31 @@ const RichTextEditor = ({ content, highlights = [], onHighlightClick }) => {
       },
     ]);
 
-    const contentState = ContentState.createFromText(content || '');
+    // Sanitize content: replace 3+ newlines with 2 to avoid huge gaps
+    const cleanContent = (content || '').replace(/\n{3,}/g, '\n\n');
+    const contentState = ContentState.createFromText(cleanContent);
     setEditorState(EditorState.createWithContent(contentState, compositeDecorator));
   }, [content, highlights, onHighlightClick]);
 
   return (
-    <div className="rich-editor-container" style={{ border: '1px solid #ddd', padding: '10px', borderRadius: '4px', minHeight: '300px', maxHeight: '600px', overflowY: 'auto' }}>
+    <div className="rich-editor-container" style={{ 
+      border: '1px solid #e0e0e0', 
+      padding: '2rem', 
+      borderRadius: '8px', 
+      minHeight: '400px', 
+      maxHeight: '600px', 
+      overflowY: 'auto',
+      backgroundColor: '#ffffff',
+      boxShadow: 'inset 0 1px 4px rgba(0,0,0,0.05), 0 0 0 1px rgba(0,0,0,0.02)',
+      fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      fontSize: '0.95rem',
+      lineHeight: '1.7',
+      color: '#2d3748'
+    }}>
       <Editor
         editorState={editorState}
         onChange={setEditorState}
-        readOnly={true} // Read only for now, as we analyze uploaded docs
+        readOnly={true}
       />
     </div>
   );
