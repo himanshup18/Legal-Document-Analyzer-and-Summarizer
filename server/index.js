@@ -31,17 +31,10 @@ const connectDB = async () => {
   }
 };
 
-const conn = connectDB();
-
-export { conn };
-
-app.use('/api/auth', authRoutes);
-app.use('/api/documents', documentRoutes);
-
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Server is running' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+}).catch(err => {
+  console.error('Failed to connect to Database, server not started', err);
 });
