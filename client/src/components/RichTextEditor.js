@@ -1,11 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Editor,
   EditorState,
   ContentState,
-  CompositeDecorator,
-  Modifier,
-  SelectionState
+  CompositeDecorator
 } from 'draft-js';
 import 'draft-js/dist/Draft.css';
 
