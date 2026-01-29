@@ -225,6 +225,37 @@ router.post('/:id/analyze', requireAuth, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
+    // Refresh content from file to ensure latest parsing logic (fixes spacing issues)
+    if (document.fileId) {
+      try {
+        const bucket = ensureGridFSConnection();
+        // Handle fileId being string or ObjectId
+        const _id = new mongoose.Types.ObjectId(document.fileId);
+        
+        const downloadStream = bucket.openDownloadStream(_id);
+        const chunks = [];
+        
+        // Promisify stream reading
+        await new Promise((resolve, reject) => {
+             downloadStream.on('data', (chunk) => chunks.push(chunk));
+             downloadStream.on('error', reject);
+             downloadStream.on('end', resolve);
+        });
+        
+        const buffer = Buffer.concat(chunks);
+        const freshContent = await parseFile(buffer, document.fileType || 'application/pdf', document.originalName);
+        
+        if (freshContent && freshContent.trim().length > 0) {
+           console.log('Refreshed document content during re-analysis');
+           document.content = freshContent;
+           await document.save();
+        }
+      } catch (parseErr) {
+        console.error('Error refreshing content during re-analysis:', parseErr);
+        // Continue with existing content if re-parsing fails
+      }
+    }
+
     const [summary, analysis, keyPoints] = await Promise.all([
       summarizeDocument(document.content),
       analyzeDocument(document.content),
