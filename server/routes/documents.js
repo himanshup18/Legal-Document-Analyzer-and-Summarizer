@@ -13,41 +13,25 @@ const router = express.Router();
 
 const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/legal-documents';
 
-// Create storage engine
-const storage = new GridFsStorage({
-  url: mongoURI,
-  file: (req, file) => {
-    return new Promise((resolve, reject) => {
-      const filename = file.originalname;
-      const fileInfo = {
-        filename: filename,
-        bucketName: 'uploads'
-      };
-      resolve(fileInfo);
-    });
-  }
-});
+// Use memory storage for reliable handling of small/medium files on Render
+const storage = multer.memoryStorage();
 
 const upload = multer({
-  storage
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
 
-// Init gfs
-// Init gfs
+// Init gfs variables
 let gfs;
 let gridfsBucket;
 
 // Helper to ensure GridFS is initialized
 const ensureGridFSConnection = () => {
   if (gridfsBucket) return gridfsBucket;
-  
   const conn = mongoose.connection;
   if (conn.readyState === 1 && conn.db) {
-    gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
-      bucketName: 'uploads'
-    });
+    gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
     gfs = gridfsBucket;
-    console.log('GridFSBucket initialized on demand');
     return gridfsBucket;
   }
   throw new Error('Database connection not ready for GridFS');
@@ -55,14 +39,11 @@ const ensureGridFSConnection = () => {
 
 const conn = mongoose.connection;
 conn.once('open', () => {
-  // Try to init on open, but ensureGridFSConnection will handle if missed
-  if (!gridfsBucket) {
-     gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
-      bucketName: 'uploads'
-    });
-    gfs = gridfsBucket;
-    console.log('GridFSBucket initialized on open event');
-  }
+    // Attempt init, but valid if skipped (handled by helper)
+    if (!gridfsBucket && conn.db) {
+        gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, { bucketName: 'uploads' });
+        gfs = gridfsBucket;
+    }
 });
 
 router.get('/', requireAuth, async (req, res) => {
@@ -99,6 +80,7 @@ router.get('/:id/file', requireAuth, async (req, res) => {
     const downloadStream = bucket.openDownloadStream(_id);
 
     downloadStream.on('error', (err) => {
+      console.error('Stream error:', err);
       return res.status(404).json({ error: 'Error retrieving file' });
     });
 
@@ -114,25 +96,15 @@ router.post('/upload', requireAuth, upload.single('document'), async (req, res) 
     }
 
     try {
-      console.log('File uploaded to GridFS:', req.file);
-
-      // We need to read the file content for analysis. 
-      // Since it's in GridFS now, we need to stream it into a buffer.
-      const bucket = ensureGridFSConnection();
-      const downloadStream = bucket.openDownloadStream(req.file.id);
-      const chunks = [];
-      for await (const chunk of downloadStream) {
-        chunks.push(chunk);
-      }
-      const buffer = Buffer.concat(chunks);
+      console.log('File received in memory:', req.file.originalname);
+      const buffer = req.file.buffer;
       
+      // 1. Analyze Content from Memory
       let content;
       try {
         content = await parseFile(buffer, req.file.mimetype, req.file.originalname);
       } catch (parseError) {
         console.error('Parse error:', parseError);
-        // Even if parse fails, we have the file. But we need content for the Document model.
-        // We'll proceed but content might be empty or error message.
          return res.status(400).json({ 
           error: parseError.message || 'Could not extract text from the document.' 
         });
@@ -144,19 +116,36 @@ router.post('/upload', requireAuth, upload.single('document'), async (req, res) 
         });
       }
 
+      // 2. Save to GridFS (Manual)
+      const bucket = ensureGridFSConnection();
+      const uploadStream = bucket.openUploadStream(req.file.originalname, {
+        contentType: req.file.mimetype,
+        metadata: { userId: req.user.id }
+      });
+      
+      const fileId = uploadStream.id;
+      
+      // Upload buffer to GridFS
+      await new Promise((resolve, reject) => {
+          uploadStream.end(buffer);
+          uploadStream.on('finish', resolve);
+          uploadStream.on('error', reject);
+      });
+
+      // 3. Create Document Record
       const document = new Document({
         userId: req.user.id,
-        filename: req.file.filename,
+        filename: req.file.originalname, // Using originalname as filename
         originalName: req.file.originalname,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
         content: content,
-        fileId: req.file.id // Link to GridFS file
+        fileId: fileId
       });
 
       await document.save();
 
-      // Process async
+      // Process async (analysis)
       processDocumentAsync(document._id, content).catch((err) => {
         console.error('Error processing document:', err);
       });
