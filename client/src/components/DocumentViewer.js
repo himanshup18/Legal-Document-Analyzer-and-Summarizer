@@ -207,33 +207,43 @@ const DocumentViewer = ({ document, onReanalyze, loading, onDocumentUpdate }) =>
                   <div className="analysis-content">
                     {Object.entries(document.analysis).map(([key, value]) => {
                       if (key === 'error') return null;
+
+                      const formatKey = (k) => k
+                        .replace(/([A-Z])/g, ' $1')
+                        .replace(/^./, (str) => str.toUpperCase())
+                        .trim();
+
+                      const renderValue = (val) => {
+                        if (Array.isArray(val)) {
+                          return (
+                            <ul className="analysis-list">
+                              {val.map((item, idx) => (
+                                <li key={idx} className="analysis-list-item">
+                                  {renderValue(item)}
+                                </li>
+                              ))}
+                            </ul>
+                          );
+                        } else if (typeof val === 'object' && val !== null) {
+                          return (
+                            <div className="analysis-nested-object">
+                              {Object.entries(val).map(([nestedKey, nestedValue]) => (
+                                <div key={nestedKey} className="analysis-nested-row">
+                                  <span className="analysis-nested-key">{formatKey(nestedKey)}:</span>
+                                  <span className="analysis-nested-value">{renderValue(nestedValue)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        }
+                        return String(val);
+                      };
                       
                       return (
                         <div key={key} className="analysis-item">
-                          <h4 className="analysis-key">
-                            {key
-                              .replace(/([A-Z])/g, ' $1')
-                              .replace(/^./, (str) => str.toUpperCase())
-                              .trim()}
-                          </h4>
+                          <h4 className="analysis-key">{formatKey(key)}</h4>
                           <div className="analysis-value">
-                            {Array.isArray(value) ? (
-                              <ul>
-                                {value.map((item, idx) => (
-                                  <li key={idx}>
-                                    {typeof item === 'object' ? (
-                                      <pre>{JSON.stringify(item, null, 2)}</pre>
-                                    ) : (
-                                      item
-                                    )}
-                                  </li>
-                                ))}
-                              </ul>
-                            ) : typeof value === 'object' ? (
-                              <pre>{JSON.stringify(value, null, 2)}</pre>
-                            ) : (
-                              <p>{value}</p>
-                            )}
+                            {renderValue(value)}
                           </div>
                         </div>
                       );
