@@ -33,14 +33,36 @@ const upload = multer({
 });
 
 // Init gfs
+// Init gfs
 let gfs;
 let gridfsBucket;
+
+// Helper to ensure GridFS is initialized
+const ensureGridFSConnection = () => {
+  if (gridfsBucket) return gridfsBucket;
+  
+  const conn = mongoose.connection;
+  if (conn.readyState === 1 && conn.db) {
+    gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+      bucketName: 'uploads'
+    });
+    gfs = gridfsBucket;
+    console.log('GridFSBucket initialized on demand');
+    return gridfsBucket;
+  }
+  throw new Error('Database connection not ready for GridFS');
+};
+
 const conn = mongoose.connection;
 conn.once('open', () => {
-  gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
-    bucketName: 'uploads'
-  });
-  gfs = gridfsBucket;
+  // Try to init on open, but ensureGridFSConnection will handle if missed
+  if (!gridfsBucket) {
+     gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+      bucketName: 'uploads'
+    });
+    gfs = gridfsBucket;
+    console.log('GridFSBucket initialized on open event');
+  }
 });
 
 router.get('/', requireAuth, async (req, res) => {
@@ -73,7 +95,8 @@ router.get('/:id/file', requireAuth, async (req, res) => {
     }
 
     const _id = new mongoose.Types.ObjectId(document.fileId);
-    const downloadStream = gridfsBucket.openDownloadStream(_id);
+    const bucket = ensureGridFSConnection();
+    const downloadStream = bucket.openDownloadStream(_id);
 
     downloadStream.on('error', (err) => {
       return res.status(404).json({ error: 'Error retrieving file' });
@@ -95,7 +118,8 @@ router.post('/upload', requireAuth, upload.single('document'), async (req, res) 
 
       // We need to read the file content for analysis. 
       // Since it's in GridFS now, we need to stream it into a buffer.
-      const downloadStream = gridfsBucket.openDownloadStream(req.file.id);
+      const bucket = ensureGridFSConnection();
+      const downloadStream = bucket.openDownloadStream(req.file.id);
       const chunks = [];
       for await (const chunk of downloadStream) {
         chunks.push(chunk);

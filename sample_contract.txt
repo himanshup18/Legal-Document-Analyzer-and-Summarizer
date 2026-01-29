@@ -1,0 +1,31 @@
+PROFESSIONAL SERVICES AND NON-DISCLOSURE AGREEMENT
+
+This Agreement ("Agreement") is entered into as of January 29, 2026, by and between TechStart Solutions Inc. ("Client") and Future Dynamics Ltd. ("Contractor").
+
+1. SCOPE OF SERVICES
+Contractor agrees to provide software development and security auditing services as detailed in the Statement of Work.
+
+2. COMPENSATION AND PAYMENT
+Client shall pay Contractor a rate of $150 per hour.
+RISK FACTOR: Payment terms are Net 90 days. Client reserves the right to withhold payment indefinitely if the quality of work is deemed unsatisfactory at Client's sole discretion.
+
+3. CONFIDENTIALITY
+Contractor acknowledges that they will have access to proprietary information. Contractor agrees to keep all such information confidential in perpetuity.
+
+4. INTELLECTUAL PROPERTY
+All work product created by Contractor shall be the sole and exclusive property of the Client. Contractor hereby waives all moral rights to the work.
+
+5. INDEMNIFICATION AND LIABILITY
+RISK FACTOR: Contractor agrees to indemnify, defend, and hold harmless the Client from any and all claims, losses, or damages arising out of this Agreement.
+RISK FACTOR: The Contractor's liability shall be unlimited. The Client's total liability under this Agreement shall not exceed the amount of $100 USD.
+
+6. TERMINATION
+RISK FACTOR: Client may terminate this Agreement at any time, with or without cause, effective immediately upon notice. Contractor may not terminate this Agreement prior to the completion of the project.
+
+7. NON-COMPETE
+RISK FACTOR: For a period of five (5) years following the termination of this Agreement, Contractor agrees not to provide similar services to any competitor of the Client within a global radius.
+
+8. GOVERNING LAW
+This Agreement shall be governed by the laws of the State of New York.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement.
