@@ -13,10 +13,7 @@ const PORT = process.env.PORT || 5000;
 
 
 app.use(cors({
-  origin: [
-    'https://legal-document-analyzer-and-summari.vercel.app',
-    'http://localhost:3000'
-  ],
+  origin: true, // Allow all origins for demo purposes
   credentials: true,
 }));
 
