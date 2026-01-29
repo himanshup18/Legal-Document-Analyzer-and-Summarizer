@@ -32,19 +32,35 @@ const DocumentViewer = ({ document, onReanalyze, loading, onDocumentUpdate }) =>
     };
 
     const addSection = (title, text) => {
+      const lineHeight = 12;
+      const pageHeight = doc.internal.pageSize.getHeight();
+      
+      // Check for title space
+      if (doc.y + 14 > pageHeight - margin) {
+        doc.addPage();
+        doc.y = margin;
+      }
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.text(title, margin, doc.y);
       doc.y += 14;
+
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
+      
       const lines = doc.splitTextToSize(String(text || ''), maxWidth);
-      doc.text(lines, margin, doc.y);
-      doc.y += lines.length * 12 + 10;
-      if (doc.y > doc.internal.pageSize.getHeight() - margin) {
-        doc.addPage();
-        doc.y = margin;
-      }
+      
+      lines.forEach((line) => {
+        if (doc.y + lineHeight > pageHeight - margin) {
+            doc.addPage();
+            doc.y = margin;
+        }
+        doc.text(line, margin, doc.y);
+        doc.y += lineHeight;
+      });
+      
+      doc.y += 10; // Extra spacing after section
     };
 
     doc.y = margin;

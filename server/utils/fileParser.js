@@ -6,11 +6,34 @@ import mammoth from 'mammoth';
  */
 async function parsePDF(buffer) {
   try {
-    const data = await pdfParse(buffer);
-    const text = data.text || '';
+    const render_page = async (pageData) => {
+      // Come back to this: improved text extraction
+      const textContent = await pageData.getTextContent();
+      let lastY, text = '';
+      for (const item of textContent.items) {
+        if (lastY == item.transform[5] || !lastY){
+            // Same line: add space
+            text += item.str + ' ';
+        }  
+        else{
+            // New line
+            text += '\n' + item.str + ' ';
+        }
+        lastY = item.transform[5];
+      }
+      return text;
+    };
+
+    const options = {
+      pagerender: render_page
+    };
+
+    const data = await pdfParse(buffer, options);
+    // basic cleanup of multiple spaces
+    const text = data.text ? data.text.replace(/  +/g, ' ') : '';
     
     if (!text || text.trim().length === 0) {
-      throw new Error('PDF appears to be empty or contains only images. Please ensure the PDF contains selectable text.');
+      throw new Error('PDF appears to be empty or contains only images.');
     }
     
     return text;
