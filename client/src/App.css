@@ -101,13 +101,16 @@
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 350px 1fr;
   gap: 2rem;
+  align-items: start;
+  min-height: 600px;
 }
 
 @media (max-width: 1024px) {
   .content-grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
   }
 }
 
