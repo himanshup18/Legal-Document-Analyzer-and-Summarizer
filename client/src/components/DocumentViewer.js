@@ -1,3 +1,4 @@
+import React, { useState, useMemo } from 'react';
 import jsPDF from 'jspdf';
 import { updateHighlightNote } from '../services/api';
 import RichTextEditor from './RichTextEditor';
