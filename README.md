@@ -7,7 +7,9 @@ A comprehensive web application for analyzing and summarizing legal documents us
 - 📄 **Document Upload**: Support for PDF, DOCX, and TXT files
 - 🤖 **AI-Powered Analysis**: Automatic document analysis using OpenAI GPT-4
 - 📋 **Smart Summarization**: Generate comprehensive summaries of legal documents
-- 🔑 **Key Points Extraction**: Automatically extract important points from documents
+- � **Rich Document Viewer**: Interactive document viewing with **Draft.js**
+- 🖍️ **Smart Highlighting**: Color-coded risk assessment and clause highlighting
+- �🔑 **Key Points Extraction**: Automatically extract important points from documents
 - 📊 **Detailed Analysis**: Get structured analysis including:
   - Document type identification
   - Key parties involved
@@ -17,16 +19,16 @@ A comprehensive web application for analyzing and summarizing legal documents us
   - Termination clauses
   - Risk factors
   - Compliance requirements
-- 💾 **Document Storage**: MongoDB database for storing documents and analyses
-- 🎨 **Modern UI**: Beautiful, responsive user interface
+- 💾 **Secure Storage**: Binary file storage using **MongoDB GridFS**
+- 🎨 **Modern UI**: Beautiful, responsive user interface with React
 
 ## Tech Stack
 
-- **Frontend**: React.js
+- **Frontend**: React.js, Draft.js (for rich text rendering)
 - **Backend**: Node.js, Express.js
-- **Database**: MongoDB
+- **Database**: MongoDB, GridFS (for file storage)
 - **AI**: OpenAI API (GPT-4)
-- **File Parsing**: pdf-parse, mammoth
+- **File Processing**: Multer, pdf-parse, mammoth
 
 ## Prerequisites
 
