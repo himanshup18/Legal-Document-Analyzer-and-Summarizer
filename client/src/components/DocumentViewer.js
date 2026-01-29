@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
 import jsPDF from 'jspdf';
 import { updateHighlightNote } from '../services/api';
+import RichTextEditor from './RichTextEditor';
 import './DocumentViewer.css';
 
 const DocumentViewer = ({ document, onReanalyze, loading, onDocumentUpdate }) => {
@@ -14,41 +14,7 @@ const DocumentViewer = ({ document, onReanalyze, loading, onDocumentUpdate }) =>
   const [noteText, setNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
 
-  const escapeHtml = (str) =>
-    String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
 
-  const escapeRegExp = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-  const highlightedContentHtml = useMemo(() => {
-    const raw = document?.content || '';
-    if (!raw) return '';
-
-    let html = escapeHtml(raw);
-
-    const marks = highlights
-      .filter((h) => h && typeof h === 'object' && h.snippet)
-      .slice(0, 12);
-
-    for (const h of marks) {
-      const sev = (h.severity || 'medium').toLowerCase();
-      const snippet = String(h.snippet).trim();
-      if (!snippet) continue;
-
-      const safe = escapeRegExp(escapeHtml(snippet));
-      const re = new RegExp(safe, 'i');
-      html = html.replace(
-        re,
-        (match) => `<mark class="risk-mark risk-${sev}">${match}</mark>`
-      );
-    }
-
-    return html.replace(/\n/g, '<br/>');
-  }, [document?.content, highlights]);
 
   const exportPdf = () => {
     if (!document) return;
@@ -352,9 +318,16 @@ const DocumentViewer = ({ document, onReanalyze, loading, onDocumentUpdate }) =>
             <section className="analysis-section">
               <h3>🖍 Highlighted Document Text</h3>
               <div className="content-box">
-                <div
-                  className="document-text"
-                  dangerouslySetInnerHTML={{ __html: highlightedContentHtml }}
+                <RichTextEditor 
+                  content={document.content}
+                  highlights={highlights}
+                  onHighlightClick={(h) => {
+                     // Find the index of this highlight to edit note
+                     const idx = highlights.findIndex(item => item === h);
+                     if (idx !== -1) {
+                       handleEditNote(idx, h.note);
+                     }
+                  }}
                 />
               </div>
             </section>

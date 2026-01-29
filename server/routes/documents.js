@@ -1,5 +1,8 @@
 import express from 'express';
 import multer from 'multer';
+import { GridFsStorage } from 'multer-gridfs-storage';
+import mongoose from 'mongoose';
+import { Readable } from 'stream';
 
 import Document from '../models/Document.js';
 import { parseFile } from '../utils/fileParser.js';
@@ -8,31 +11,36 @@ import { requireAuth } from '../middleware/auth.js';
 
 const router = express.Router();
 
+const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/legal-documents';
+
+// Create storage engine
+const storage = new GridFsStorage({
+  url: mongoURI,
+  file: (req, file) => {
+    return new Promise((resolve, reject) => {
+      const filename = file.originalname;
+      const fileInfo = {
+        filename: filename,
+        bucketName: 'uploads'
+      };
+      resolve(fileInfo);
+    });
+  }
+});
+
 const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024,
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      'application/pdf',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/msword',
-      'text/plain',
-      'text/markdown',
-    ];
+  storage
+});
 
-    const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt', '.md'];
-    const fileExtension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-
-    if (allowedTypes.includes(file.mimetype) || allowedExtensions.includes(fileExtension)) {
-      console.log('File accepted:', file.originalname, 'MIME type:', file.mimetype);
-      cb(null, true);
-    } else {
-      console.log('File rejected:', file.originalname, 'MIME type:', file.mimetype, 'Extension:', fileExtension);
-      cb(new Error(`Invalid file type: ${file.mimetype || 'unknown'}. Only PDF, DOCX, and TXT files are allowed.`));
-    }
-  },
+// Init gfs
+let gfs;
+let gridfsBucket;
+const conn = mongoose.connection;
+conn.once('open', () => {
+  gridfsBucket = new mongoose.mongo.GridFSBucket(conn.db, {
+    bucketName: 'uploads'
+  });
+  gfs = gridfsBucket;
 });
 
 router.get('/', requireAuth, async (req, res) => {
@@ -56,61 +64,75 @@ router.get('/:id', requireAuth, async (req, res) => {
   }
 });
 
-router.post('/upload', requireAuth, (req, res) => {
-  upload.single('document')(req, res, async (err) => {
-    if (err) {
-      if (err instanceof multer.MulterError) {
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
-        }
-        return res.status(400).json({ error: 'File upload error: ' + err.message });
-      }
-      if (err.message && err.message.includes('Invalid file type')) {
-        return res.status(400).json({ error: err.message });
-      }
-      return res.status(400).json({ error: 'Upload error: ' + err.message });
+// Route to stream the file
+router.get('/:id/file', requireAuth, async (req, res) => {
+  try {
+    const document = await Document.findOne({ _id: req.params.id, userId: req.user.id });
+    if (!document || !document.fileId) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    const _id = new mongoose.Types.ObjectId(document.fileId);
+    const downloadStream = gridfsBucket.openDownloadStream(_id);
+
+    downloadStream.on('error', (err) => {
+      return res.status(404).json({ error: 'Error retrieving file' });
+    });
+
+    downloadStream.pipe(res);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.post('/upload', requireAuth, upload.single('document'), async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
     }
 
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: 'No file uploaded. Please select a file.' });
+      console.log('File uploaded to GridFS:', req.file);
+
+      // We need to read the file content for analysis. 
+      // Since it's in GridFS now, we need to stream it into a buffer.
+      const downloadStream = gridfsBucket.openDownloadStream(req.file.id);
+      const chunks = [];
+      for await (const chunk of downloadStream) {
+        chunks.push(chunk);
       }
-
-      console.log('File received:', {
-        originalName: req.file.originalname,
-        mimetype: req.file.mimetype,
-        size: req.file.size,
-      });
-
+      const buffer = Buffer.concat(chunks);
+      
       let content;
       try {
-        content = await parseFile(req.file.buffer, req.file.mimetype, req.file.originalname);
+        content = await parseFile(buffer, req.file.mimetype, req.file.originalname);
       } catch (parseError) {
         console.error('Parse error:', parseError);
-        return res.status(400).json({ 
-          error: parseError.message || 'Could not extract text from the document. Please ensure the file contains readable text.' 
+        // Even if parse fails, we have the file. But we need content for the Document model.
+        // We'll proceed but content might be empty or error message.
+         return res.status(400).json({ 
+          error: parseError.message || 'Could not extract text from the document.' 
         });
       }
 
       if (!content || content.trim().length === 0) {
-        return res.status(400).json({ 
-          error: 'Document appears to be empty or contains no extractable text. Please ensure the file contains readable text content.' 
+         return res.status(400).json({ 
+          error: 'Document appears to be empty or contains no extractable text.' 
         });
       }
 
-      console.log('Successfully extracted', content.length, 'characters from document');
-
       const document = new Document({
         userId: req.user.id,
-        filename: req.file.filename || `doc_${Date.now()}`,
+        filename: req.file.filename,
         originalName: req.file.originalname,
         fileType: req.file.mimetype,
         fileSize: req.file.size,
         content: content,
+        fileId: req.file.id // Link to GridFS file
       });
 
       await document.save();
 
+      // Process async
       processDocumentAsync(document._id, content).catch((err) => {
         console.error('Error processing document:', err);
       });
@@ -124,11 +146,11 @@ router.post('/upload', requireAuth, (req, res) => {
           status: 'processing',
         },
       });
+
     } catch (error) {
       console.error('Upload processing error:', error);
       res.status(500).json({ error: error.message || 'Failed to process document' });
     }
-  });
 });
 
 async function processDocumentAsync(documentId, content) {
@@ -262,10 +284,23 @@ router.patch('/:id/highlights/:highlightIndex', requireAuth, async (req, res) =>
 
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const document = await Document.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
+    const document = await Document.findOne({ _id: req.params.id, userId: req.user.id });
     if (!document) {
       return res.status(404).json({ error: 'Document not found' });
     }
+
+    // Delete file from GridFS
+    if (document.fileId) {
+        try {
+            const _id = new mongoose.Types.ObjectId(document.fileId);
+            await gridfsBucket.delete(_id);
+        } catch(err) {
+            console.error('Error deleting file from GridFS:', err);
+            // Continue to delete document even if file delete fails
+        }
+    }
+
+    await Document.deleteOne({ _id: req.params.id }); 
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
